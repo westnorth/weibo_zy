@@ -4,13 +4,13 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
@@ -37,6 +37,23 @@ import weibo4j.Weibo;
 import weibo4j.WeiboException;
 
 //import ch.randelshofer.quaqua.*;
+class statusTree {
+	private String strIdFather;
+	private Status status;
+
+	public statusTree(String idFather, Status myStatus) {
+		strIdFather = idFather;
+		status = myStatus;
+	}
+
+	public String getDadID() {
+		return strIdFather;
+	}
+
+	public Status getStatus() {
+		return status;
+	}
+}
 
 public class mainGUI extends JFrame {
 
@@ -46,21 +63,22 @@ public class mainGUI extends JFrame {
 	private static final long serialVersionUID = 1L;
 	String[] strToken;// 1,id 2.token 3.token secret
 	private static String DB_NAME = "weibo.db";
+	private static String DB_CONNECTION_TEXT = "jdbc:sqlite:weibo.db";
 	private JList listUser;// 显示帐号的列表控件
 	private JTextField txtFindcontent;
 	private JTable tableStatus;
 	private static String CONSUMKEY = "416693359";
-	private static String CONSUMSECRET="f3aedd1273689a65b2f6a82f7d77dd25";
+	private static String CONSUMSECRET = "f3aedd1273689a65b2f6a82f7d77dd25";
 	private JTextField txtUsersearch;
-	private List<Status> listStatus=null;
 	private Table_Model TableDataModel;
 	final int INITIAL_ROWHEIGHT = 33;
-	
+	private ArrayList<statusTree> mainStatusTree = new ArrayList<statusTree>();
 	private JScrollPane scrollPaneContent;
-	
+
 	private String[] strSelectName;
 	private Vector vectTableData = new Vector();
 	String[] strTableTitle;
+
 	/**
 	 * Launch the application.
 	 */
@@ -88,7 +106,7 @@ public class mainGUI extends JFrame {
 	/**
 	 * Create the application.
 	 */
-public mainGUI() {
+	public mainGUI() {
 		dlgGetPin dialog = new dlgGetPin(this);
 		dialog.setVisible(true);
 		strToken = new String[3];
@@ -111,7 +129,6 @@ public mainGUI() {
 		setSize(913, 717);
 		getContentPane().setLayout(null);
 
-		
 		// 账号面板
 		JPanel panelName = new JPanel();
 		panelName.setBorder(new TitledBorder("微博账号名称"));
@@ -122,7 +139,7 @@ public mainGUI() {
 		String[] strArrName = getDataFromDB("userInfo", "screenName");
 		if (strArrName[0] != null) {
 			listUser = new JList(strArrName);
-			listStatus=getStatus(strArrName[0],strToken[1],strToken[2],1,10);
+			mainStatusTree = getStatus("姚晨", strToken[1], strToken[2], 1, 20);
 		} else
 			listUser = new JList();
 		listUser.setBounds(12, 145, 189, 511);
@@ -136,9 +153,6 @@ public mainGUI() {
 		// };
 		// list.addMouseListener(mouseListener);
 
-		
-		
-		
 		// 将列表放入滚动面板中，这种使滚动条和控件分离的做法实在有点不优雅。
 		JScrollPane scrollPaneName = new JScrollPane(listUser);
 		scrollPaneName.getViewport().setView(listUser);
@@ -151,7 +165,7 @@ public mainGUI() {
 		scrollPaneName.setBounds(12, 142, 192, 515);// 不设置的话，就连List都显示不出来了。
 		// scrollPane.setSize(192, 515);
 
-		JLabel label_1 = new JLabel("搜索账号");
+		JLabel label_1 = new JLabel("账号");
 		label_1.setBounds(12, 34, 71, 25);
 		panelName.add(label_1);
 
@@ -161,9 +175,18 @@ public mainGUI() {
 		panelName.add(txtUsersearch);
 		txtUsersearch.setColumns(10);
 
-		JButton btnSearchUser = new JButton("开始搜索帐号");
-		btnSearchUser.setBounds(39, 71, 142, 38);
-		panelName.add(btnSearchUser);
+		JButton btnShowStatus = new JButton("Show status");
+		btnShowStatus.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				mainStatusTree = getStatus(txtUsersearch.getText(),
+						strToken[1], strToken[2], 1, 100);
+				vectTableData.removeAllElements();
+				useStatusFillTableData();
+				TableDataModel.fireTableDataChanged();
+			}
+		});
+		btnShowStatus.setBounds(39, 71, 142, 38);
+		panelName.add(btnShowStatus);
 
 		JButton btnShowAuthUser = new JButton("显示授权帐号");
 		btnShowAuthUser.setBounds(62, 114, 119, 26);
@@ -225,10 +248,31 @@ public mainGUI() {
 		panelContentTool.setLayout(null);
 
 		JButton btnCalcfrequece = new JButton("统计词频");
+		btnCalcfrequece.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				// I think the good way is :get status and writer all to the
+				// pure text file, do this in Funcition getStatus
+				// and then use IKAnalyzer to seperate by Chinese words
+				// finally ,write per word as a record into table in SQLite DB.
+			}
+		});
 		btnCalcfrequece.setBounds(12, 25, 97, 28);
 		panelContentTool.add(btnCalcfrequece);
 
 		initialize();
+	}
+
+	public boolean useStatusFillTableData() {
+		int nStatusSize = mainStatusTree.size();
+		for (int i = 0; i < nStatusSize; i++) {
+			Vector subVect = new Vector();
+			Status currStatus=mainStatusTree.get(i).getStatus();
+			subVect.add(currStatus.getText());
+			subVect.add(String.valueOf(currStatus.getId()));
+			subVect.add(mainStatusTree.get(i).getDadID());
+			vectTableData.add(subVect);
+		}
+		return true;
 	}
 
 	/**
@@ -245,7 +289,7 @@ public mainGUI() {
 		try {
 			Class.forName("org.sqlite.JDBC");
 			Connection conn;
-			conn = DriverManager.getConnection("jdbc:sqlite:" + DB_NAME);
+			conn = DriverManager.getConnection(DB_CONNECTION_TEXT);
 			// 建立事务机制,禁止自动提交，设置回滚点
 			conn.setAutoCommit(false);
 
@@ -278,40 +322,56 @@ public mainGUI() {
 
 	/**
 	 * 获得微博内容,要注意的是如果是Retweet的消息，则需要取得retweeted_status中的内容
-	 * @param strName 欲获得内容微博主人的名字或id
-	 * @param strTokenKey 访问令牌
-	 * @param strTokenSecret 访问密钥
-	 * @param nPage 要获得内容的页码编号
-	 * @param nNumberOfStatus 每页要获得的Status的数量
+	 * 
+	 * @param strName
+	 *            欲获得内容微博主人的名字或id
+	 * @param strTokenKey
+	 *            访问令牌
+	 * @param strTokenSecret
+	 *            访问密钥
+	 * @param nPage
+	 *            要获得内容的页码编号
+	 * @param nNumberOfStatus
+	 *            每页要获得的Status的数量
 	 * @return 获得内容列表
 	 */
-	private List<Status> getStatus(String strName,String strTokenKey,
-			String strTokenSecret,int nPage,int nNumberOfStatus) {
+	private ArrayList<statusTree> getStatus(String strName, String strTokenKey,
+			String strTokenSecret, int nPage, int nNumberOfStatus) {
 		System.setProperty("weibo4j.oauth.consumerKey", CONSUMKEY);
-		System.setProperty("weibo4j.oauth.consumerSecret",CONSUMSECRET);
-		List<Status> list=null;
+		System.setProperty("weibo4j.oauth.consumerSecret", CONSUMSECRET);
+		ArrayList<statusTree> listTree = new ArrayList<statusTree>();
 		try {
 			Weibo weibo = new Weibo();
 			weibo.setToken(strTokenKey, strTokenSecret);
-			list = weibo.getUserTimeline(strName,
+			List<Status> list = weibo.getUserTimeline(strName,
 					new Paging(nPage).count(nNumberOfStatus));
-//			if (list.size() == 0) {
-//				System.out.println("there is no status");
-//			}
-//			else
-//			{
-//				for(int i=0;i<list.size();i++)
-//				{
-//					Status statusUser=list.get(i);
-//					String Text=statusUser.getText();
-//					System.out.println(Text);
-//				}
-//			}
+			if (list.size() == 0) {
+				System.out.println("there is no status");
+			} else {
+				for (int i = 0; i < list.size(); i++) {
+					Status statusUser = list.get(i);
+					statusTree myTree = new statusTree(null, statusUser);// root
+																			// status  the  dad  is null
+					String strDadId = String.valueOf(statusUser.getId());
+					listTree.add(myTree);
+					while (statusUser.getRetweeted_status() != null) {
+						Status subStatus = statusUser.getRetweeted_status();
+						statusTree subTree = new statusTree(strDadId, subStatus);
+						listTree.add(subTree);
+						statusUser = subStatus;
+						strDadId = String.valueOf(statusUser.getId());
+					}
+					mySQLite myDB = new mySQLite(DB_CONNECTION_TEXT);
+					myDB.insertStatus(list);
+					String Text = statusUser.getText();
+					System.out.println(Text);
+				}
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
 		}
-		return list;
+		return listTree;
 	}
 
 	/**
@@ -319,24 +379,24 @@ public mainGUI() {
 	 */
 	private void initialize() {
 	}
-	
+
 	public JScrollPane createTable() {
 
-//		ExcelUtils myExcel = new ExcelUtils();
-//		if (myExcel.ReadString(getCurrentDir() + strDataFile, 0, 0))//
-//		{
-//			String[][] mainstrTableData = new String[myExcel.getRow(0)][myExcel
-//					.getColumn(0)];
-//			mainstrTableData = myExcel.getStringData().get(0);
-//			strTableTitle = mainstrTableData[0].clone();
-//			int nTableRow = mainstrTableData.length - 1, nTableCol = mainstrTableData[0].length;
-//			for (int i = 1; i <= nTableRow; i++) {
-//				Vector vectsub = new Vector(mainstrTableData[0].length);
-//				for (int j = 0; j < mainstrTableData[0].length; j++)
-//					vectsub.add(j, mainstrTableData[i][j]);
-//				vectTableData.add(vectsub);
-//			}
-//		}
+		// ExcelUtils myExcel = new ExcelUtils();
+		// if (myExcel.ReadString(getCurrentDir() + strDataFile, 0, 0))//
+		// {
+		// String[][] mainstrTableData = new String[myExcel.getRow(0)][myExcel
+		// .getColumn(0)];
+		// mainstrTableData = myExcel.getStringData().get(0);
+		// strTableTitle = mainstrTableData[0].clone();
+		// int nTableRow = mainstrTableData.length - 1, nTableCol =
+		// mainstrTableData[0].length;
+		useStatusFillTableData();
+		strTableTitle = new String[3];
+		strTableTitle[0] = "内容";
+		strTableTitle[1]="Id";
+		strTableTitle[2]="dad id";
+		// }
 
 		// Create a model of the vectTableData.
 		TableDataModel = new Table_Model(vectTableData, strTableTitle);
@@ -358,13 +418,13 @@ public mainGUI() {
 						.replace(']', ' ').split(",");// 转换为String后，字符会用一对方括号括起来，这个先用硬编码取掉。
 				if (me.getButton() == MouseEvent.BUTTON1) {// 单击鼠标左键
 					if (me.getClickCount() == 2) {// 如果是双击
-//						ShowDetailDlg(strTableTitle, strSelectName);
+						// ShowDetailDlg(strTableTitle, strSelectName);
 					}
 				}
 
 				if (me.getButton() == MouseEvent.BUTTON3) {
 					tableStatus.setRowSelectionInterval(nrow, nrow);
-					CreatePopMenu(tableStatus, me, nrow, strSelectName[1]);
+					CreatePopMenu(tableStatus, me, nrow, strSelectName[0]);
 				}
 			}
 		});
@@ -372,55 +432,64 @@ public mainGUI() {
 		scrollPaneContent = new JScrollPane(tableStatus);
 		return scrollPaneContent;
 	}
-	
-	
+
 	public void CreatePopMenu(JTable tableView, MouseEvent evt,
 			int nSelectedLine, String strName) {
 		tableView.changeSelection(nSelectedLine, 2, false, false);
 
 		JPopupMenu popupMenu = new JPopupMenu();
 
-		JMenuItem itemOpenFolder = new JMenuItem("打开" + strName.trim() + "主目录");
-		JMenuItem itemDetail = new JMenuItem("查看" + strName.trim() + "明细");
-		JMenuItem itemAddSource = new JMenuItem("添加" + strName.trim() + "图片资料");
-		JMenuItem itemGetResult = new JMenuItem("概算" + strName.trim() + "安置情况");
-		JMenuItem itemExportTable = new JMenuItem("导出当前表内容");
-		JMenuItem itemAdd = new JMenuItem("添加新征收户");
+		JMenuItem itemDetail = new JMenuItem("");
+		JMenuItem itemDelCurrent = new JMenuItem("delete current weibo");
+		JMenuItem itemDelAll = new JMenuItem("delete all weibo");
+		JMenuItem itemExport = new JMenuItem("export weibo");
+		JMenuItem itemAdd = new JMenuItem("add new weibo");
 
-		popupMenu.add(itemOpenFolder);
 		popupMenu.add(itemDetail);
-		popupMenu.add(itemAddSource);
-		popupMenu.addSeparator();
-		popupMenu.add(itemGetResult);
-		popupMenu.add(itemExportTable);
-		popupMenu.addSeparator();
 		popupMenu.add(itemAdd);
+		popupMenu.addSeparator();
+		popupMenu.add(itemDelCurrent);
+		popupMenu.add(itemDelAll);
+		popupMenu.addSeparator();
+		popupMenu.add(itemExport);
 
-		itemOpenFolder.addActionListener(new ActionListener() {
+		itemDetail.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-//				browsePath(getCurrentDir() + strSelectName[2].trim());
-//				System.out.println("点击了目录菜单");
+				// Desktop desktop = Desktop.getDesktop();
+				// File fileOpen = new File(getCurrentDir()
+				// + strSelectName[2].trim() + File.separator
+				// + strCalcFile);
+				// if (!fileOpen.isFile()) {
+				// JOptionPane.showMessageDialog(null, "文件"
+				// + getCurrentDir() + strSelectName[2].trim()
+				// + File.separator + strCalcFile + "不存在，请先创建文件");
+				// return;
+				// }
+				// desktop.open(fileOpen);
 			}
 		});
 		itemDetail.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//					Desktop desktop = Desktop.getDesktop();
-//					File fileOpen = new File(getCurrentDir()
-//							+ strSelectName[2].trim() + File.separator
-//							+ strCalcFile);
-//					if (!fileOpen.isFile()) {
-//						JOptionPane.showMessageDialog(null, "文件"
-//								+ getCurrentDir() + strSelectName[2].trim()
-//								+ File.separator + strCalcFile + "不存在，请先创建文件");
-//				return;
-//					}
-//					desktop.open(fileOpen);
+				System.out.println("click detail");
+				// TODO detail item
 			}
 		});
-		itemAddSource.addActionListener(new ActionListener() {
+		itemAdd.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				System.out.println("点击了添加图片菜单");
-				// TODO source item add
+				System.out.println("click add item");
+				// TODO add item
+			}
+		});
+		itemDelCurrent.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				System.out.println("click del item");
+				// TODO del item
+			}
+		});
+		itemDelAll.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				System.out.println("click del all");
+				// TODO del all
 			}
 		});
 		itemAdd.addActionListener(new ActionListener() {
@@ -429,21 +498,16 @@ public mainGUI() {
 				// TODO add item
 			}
 		});
-		itemExportTable.addActionListener(new ActionListener() {
+		itemExport.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-//				showExportDlg(strTableTitle, vectTableData);
-				System.out.println("点击了导出菜单");
-			}
-		});
-		itemGetResult.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				System.out.println("点击了概算菜单");
-//				showResultDlg(strTableTitle, strSelectName);
+				System.out.println("click export");
+				// TODO export item
 			}
 		});
 
 		popupMenu.show(evt.getComponent(), evt.getX(), evt.getY());
 	}
+
 	public String getCurrentDir() {
 		String curdir = "";
 		try {

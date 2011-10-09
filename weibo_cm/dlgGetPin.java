@@ -31,26 +31,26 @@ public class dlgGetPin extends JDialog {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	private static String DATABASE_CONNECTION="jdbc:sqlite:weibo.db";
+	private static String DATABASE_CONNECTION = "jdbc:sqlite:weibo.db";
 	public String strPin = "";
 	private final JPanel contentPanel = new JPanel();
 	private JTextField tfPinCode;
 	private RequestToken requestToken = null;
 	private AccessToken accessToken = null;
 	private String[] strToken = null;// 1,id 2.token 3.token secret
-	
+
 	private static String CONSUMKEY = "416693359";
-	private static String CONSUMSECRET="f3aedd1273689a65b2f6a82f7d77dd25";
+	private static String CONSUMSECRET = "f3aedd1273689a65b2f6a82f7d77dd25";
 
 	/**
 	 * Create the dialog.
 	 */
 	public dlgGetPin(JFrame owner) {
 		super(owner, "get Pin", true);
-		setBounds(100, 100, 769, 300);			
+		setBounds(100, 100, 769, 300);
 		System.setProperty("weibo4j.oauth.consumerKey", CONSUMKEY);
-		System.setProperty("weibo4j.oauth.consumerSecret",CONSUMSECRET);
-		
+		System.setProperty("weibo4j.oauth.consumerSecret", CONSUMSECRET);
+
 		strToken = new String[3];
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -133,7 +133,7 @@ public class dlgGetPin extends JDialog {
 				comboBox = new JComboBox(strListName);
 			} else
 				comboBox = new JComboBox();
-//			comboBox.addItem("心情慵懒");
+			// comboBox.addItem("心情慵懒");
 			panel.add(comboBox);
 
 			JButton button = new JButton("使用");
@@ -194,7 +194,7 @@ public class dlgGetPin extends JDialog {
 		try {
 
 			System.setProperty("weibo4j.oauth.consumerKey", CONSUMKEY);
-			System.setProperty("weibo4j.oauth.consumerSecret",CONSUMSECRET);
+			System.setProperty("weibo4j.oauth.consumerSecret", CONSUMSECRET);
 			Weibo weibo = new Weibo();
 			requestToken = weibo.getOAuthRequestToken();
 
@@ -253,23 +253,21 @@ public class dlgGetPin extends JDialog {
 	}
 
 	@SuppressWarnings("finally")
-	private User getUserInfo(String strUserID)
-	{
-		Weibo weiboInfo=new Weibo();
-		weiboInfo.setToken(strToken[1],strToken[2]);
+	private User getUserInfo(String strUserID) {
+		Weibo weiboInfo = new Weibo();
+		weiboInfo.setToken(strToken[1], strToken[2]);
 		User user = null;
 		try {
 			user = weiboInfo.showUser(strUserID);
-			System.out.println("this user:"+user.toString());
-			
+			System.out.println("this user:" + user.toString());
+
 		} catch (WeiboException e) {
 			e.printStackTrace();
-		}
-		finally
-		{
+		} finally {
 			return user;
 		}
 	}
+
 	/**
 	 * 将用户信息插入数据库
 	 * 
@@ -279,7 +277,7 @@ public class dlgGetPin extends JDialog {
 	 */
 	@SuppressWarnings("finally")
 	private boolean insertUserInfo(String[] strInfo) {
-		Connection conn=null;
+		Connection conn = null;
 		try {
 			Class.forName("org.sqlite.JDBC");
 			conn = DriverManager.getConnection(DATABASE_CONNECTION);
@@ -291,34 +289,33 @@ public class dlgGetPin extends JDialog {
 					.executeQuery("select * from userInfo where id = '"
 							+ strInfo[0] + "';");
 			String strSQLiteID = rs.getString("id");
-			User userInfo=getUserInfo(strInfo[0]);
-//			String strUserInfo=userInfo.toString();
-//			strUserInfo=strUserInfo.substring(5,strUserInfo.length()-1);
-			
-			if (strSQLiteID==null)// 如果该id还不存在于数据库中，将其插入
+			User userInfo = getUserInfo(strInfo[0]);
+			// String strUserInfo=userInfo.toString();
+			// strUserInfo=strUserInfo.substring(5,strUserInfo.length()-1);
+
+			if (strSQLiteID == null)// 如果该id还不存在于数据库中，将其插入
 			{
 				stat.executeUpdate("insert into userInfo(id,screenName,access_token,access_secret) values ('"
 						+ strInfo[0]
 						+ "','"
 						+ userInfo.getScreenName()
 						+ "','"
-						+ strInfo[1]
-						+ "','"
-						+ strInfo[2]
-						+ "');");
+						+ strInfo[1] + "','" + strInfo[2] + "');");
 				conn.commit();
 			}
 
-//			//以下一共替换了三个字符串，一是日期，一是id，一是false，给这三者都加上了引号，这样，
-//			//执行插入操作时就不会报错了。这两个正则式匹配了日期及id
-			String regEx="createdAt=(.*),\\W?fa"; 
-			String regEx2="id=(\\d+)";
-			
-			String strUserInfo=userInfo.toString().replaceAll(regEx, "createdAt='$1',fa");
-			strUserInfo=strUserInfo.substring(5,strUserInfo.length()-1);
-			strUserInfo=strUserInfo.replaceAll(regEx2,"id='$1'");
-			strUserInfo=strUserInfo.replaceAll("false", "'false'");
-			String strExecute="update userInfo set "+strUserInfo+" where id = '"+strInfo[0]+"';";
+			// //以下一共替换了三个字符串，一是日期，一是id，一是false，给这三者都加上了引号，这样，
+			// //执行插入操作时就不会报错了。这两个正则式匹配了日期及id
+			String regEx = "createdAt=(.*),\\W?fa";
+			String regEx2 = "id=(\\d+)";
+
+			String strUserInfo = userInfo.toString().replaceAll(regEx,
+					"createdAt='$1',fa");
+			strUserInfo = strUserInfo.substring(5, strUserInfo.length() - 1);
+			strUserInfo = strUserInfo.replaceAll(regEx2, "id='$1'");
+			strUserInfo = strUserInfo.replaceAll("false", "'false'");
+			String strExecute = "update userInfo set " + strUserInfo
+					+ " where id = '" + strInfo[0] + "';";
 			stat.executeUpdate(strExecute);
 			conn.commit();
 			stat.close();
@@ -345,19 +342,19 @@ public class dlgGetPin extends JDialog {
 			conn.setAutoCommit(false);
 
 			Statement stat = conn.createStatement();
-//					User{weibo=null, id=2438418282, name='心情慵懒', 
-//					screenName='心情慵懒', location='甘肃 陇南', description='', 
-//					profileImageUrl='http://tp3.sinaimg.cn/2438418282/50/5612515360/1', 
-//					province='62', city='26', domain ='', gender ='m', 
-//					url='', 
-//allowAllActMsg=false, 
-//					followersCount=1, 
-//					friendsCount=40, createdAt=Sun Oct 02 00:00:00 CST 2011,
-//					favouritesCount=0, following=false, statusesCount=0,
-//geoEnabled=false,
-//					voiderified=false, 
-//status=null}
-			
+			// User{weibo=null, id=2438418282, name='心情慵懒',
+			// screenName='心情慵懒', location='甘肃 陇南', description='',
+			// profileImageUrl='http://tp3.sinaimg.cn/2438418282/50/5612515360/1',
+			// province='62', city='26', domain ='', gender ='m',
+			// url='',
+			// allowAllActMsg=false,
+			// followersCount=1,
+			// friendsCount=40, createdAt=Sun Oct 02 00:00:00 CST 2011,
+			// favouritesCount=0, following=false, statusesCount=0,
+			// geoEnabled=false,
+			// voiderified=false,
+			// status=null}
+
 			stat.executeUpdate("create table userInfo ("
 					+ "id PRIMARY KEY NOT NULL,"// 用户UID"，主键
 					+ "screenName,"// 微博昵称
@@ -377,25 +374,26 @@ public class dlgGetPin extends JDialog {
 					+ "createdAt,"// 创建时间
 					+ "following,"// 是否已关注(此特性暂不支持)
 					+ "verified,"// 加V标示，是否微博认证用户
-					+"status,"//状态，由取回的字符中提取，意义不明
-					+"geoEnabled,"//地理状态信息
-					+"allowAllActMsg,"//由取回的字符中提取，意义不明
-					+"weibo,"//由取回的字符中提取，意义不明
+					+ "status,"// 状态，由取回的字符中提取，意义不明
+					+ "geoEnabled,"// 地理状态信息
+					+ "allowAllActMsg,"// 由取回的字符中提取，意义不明
+					+ "weibo,"// 由取回的字符中提取，意义不明
 					+ "access_token,"// 访问Token
 					+ "access_secret)");// 访问密钥
-			
-//			[createdAt=Sat Oct 01 23:51:54 CST 2011, 
-//			id=3363835379243442, text=养生之道，首在养气。,
-//			source=<a href="http://mail.sina.com.cn" rel="nofollow">新浪免费邮箱</a>, 
-//			isTruncated=false, inReplyToStatusId=-1, inReplyToUserId=-1, 
-//			isFavorited=false, inReplyToScreenName=, 
-//latitude=-1.0, 
-//longitude=-1.0, 
-//			thumbnail_pic=, bmiddle_pic=,
-//			original_pic=,  
-//mid=3363835379243442, 
-//			user=null, 
-//			retweeted_status=null]}
+
+			// [createdAt=Sat Oct 01 23:51:54 CST 2011,
+			// id=3363835379243442, text=养生之道，首在养气。,
+			// source=<a href="http://mail.sina.com.cn"
+			// rel="nofollow">新浪免费邮箱</a>,
+			// isTruncated=false, inReplyToStatusId=-1, inReplyToUserId=-1,
+			// isFavorited=false, inReplyToScreenName=,
+			// latitude=-1.0,
+			// longitude=-1.0,
+			// thumbnail_pic=, bmiddle_pic=,
+			// original_pic=,
+			// mid=3363835379243442,
+			// user=null,
+			// retweeted_status=null]}
 
 			stat.executeUpdate("create table statusInfo (" + "created_at,"// 创建时间
 					+ "id PRIMARY KEY NOT NULL,"// 微博ID，主键
@@ -432,7 +430,8 @@ public class dlgGetPin extends JDialog {
 			e.printStackTrace();
 		}
 	}
-		/**
+
+	/**
 	 * 由数据库的表中取出一列数据
 	 * 
 	 * @param strTable
