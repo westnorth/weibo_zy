@@ -237,7 +237,7 @@ public class mySQLite {
 	 *            列名称
 	 * @return 数组，包含了该列数据
 	 */
-	private String[] getDataFromDB(String strTable, String strColumn) {
+	public String[] getDataFromDB(String strTable, String strColumn) {
 		String[] strResult = null;
 		try {
 			Class.forName("org.sqlite.JDBC");
@@ -280,7 +280,7 @@ public class mySQLite {
 	 * @return User ,includ all the information can get from weibo.com
 	 */
 	@SuppressWarnings("finally")
-	private User getUserInfo(String[] strUserInfo) {
+	public User getUserInfo(String[] strUserInfo) {
 		Weibo weiboInfo = new Weibo();
 		weiboInfo.setToken(strUserInfo[1], strUserInfo[2]);
 		User user = null;

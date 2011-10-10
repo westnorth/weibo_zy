@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -65,6 +66,7 @@ public class mainGUI extends JFrame {
 	private static String DB_NAME = "weibo.db";
 	private static String DB_CONNECTION_TEXT = "jdbc:sqlite:weibo.db";
 	private JList listUser;// 显示帐号的列表控件
+	final DefaultListModel listModelUser=new DefaultListModel();
 	private JTextField txtFindcontent;
 	private JTable tableStatus;
 	private static String CONSUMKEY = "416693359";
@@ -138,20 +140,30 @@ public class mainGUI extends JFrame {
 
 		String[] strArrName = getDataFromDB("userInfo", "screenName");
 		if (strArrName[0] != null) {
-			listUser = new JList(strArrName);
+//			DefaultListModel
+			listModelUser.addElement(strArrName[0]);
+			listUser = new JList(listModelUser);
 			mainStatusTree = getStatus("姚晨", strToken[1], strToken[2], 1, 20);
 		} else
 			listUser = new JList();
 		listUser.setBounds(12, 145, 189, 511);
-		// MouseListener mouseListener = new MouseAdapter() {
-		// public void mouseClicked(MouseEvent e) {
-		// if (e.getClickCount() == 2) {
-		// int index = list.locationToIndex(e.getPoint());
-		// System.out.println("Double clicked on Item " + index);
-		// }
-		// }
-		// };
-		// list.addMouseListener(mouseListener);
+		
+	    MouseListener mouseListener = new MouseAdapter() {
+	        public void mouseClicked(MouseEvent mouseEvent) {
+	          JList theList = (JList) mouseEvent.getSource();
+	          if (mouseEvent.getClickCount() == 2) {
+	            int index = theList.locationToIndex(mouseEvent.getPoint());
+	            if (index >= 0) {
+	              Object o = theList.getModel().getElementAt(index);
+					mainStatusTree = getStatus(o.toString(),
+							strToken[1], strToken[2], 1, 100);
+					useDataFillTable();
+	              System.out.println("Double-clicked on: " + o.toString());
+	            }
+	          }
+	        }
+	      };
+	      listUser.addMouseListener(mouseListener);
 
 		// 将列表放入滚动面板中，这种使滚动条和控件分离的做法实在有点不优雅。
 		JScrollPane scrollPaneName = new JScrollPane(listUser);
@@ -180,15 +192,31 @@ public class mainGUI extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				mainStatusTree = getStatus(txtUsersearch.getText(),
 						strToken[1], strToken[2], 1, 100);
-				vectTableData.removeAllElements();
-				useStatusFillTableData();
-				TableDataModel.fireTableDataChanged();
+				useDataFillTable();
+				listModelUser.addElement(txtUsersearch.getText());
+//				final DefaultListModel listModel   = new DefaultListModel();//  (DefaultListModel)listUser.getModel(); 
+//				listModel.insertElementAt(txtUsersearch.getText(),   0);
+//				listUser.repaint();
 			}
 		});
 		btnShowStatus.setBounds(39, 71, 142, 38);
 		panelName.add(btnShowStatus);
 
 		JButton btnShowAuthUser = new JButton("显示授权帐号");
+		btnShowAuthUser.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				mySQLite userSQL=new mySQLite(DB_CONNECTION_TEXT);
+				String[] strUserAuth=userSQL.getDataFromDB("userInfo", "name");
+				if(strUserAuth[0]==null)
+				{
+					JOptionPane.showMessageDialog(null, "There are  no Authority User");
+					return;
+				}
+				listModelUser.removeAllElements();
+				for (String strName : strUserAuth)
+					listModelUser.addElement(strName);
+			}
+		});
 		btnShowAuthUser.setBounds(62, 114, 119, 26);
 		panelName.add(btnShowAuthUser);
 
@@ -261,7 +289,21 @@ public class mainGUI extends JFrame {
 
 		initialize();
 	}
-
+private boolean useDataFillTable(){
+	vectTableData.removeAllElements();
+	useStatusFillTableData();
+	if (!vectTableData.isEmpty())//如果表格数据不为空
+		TableDataModel.fireTableDataChanged();
+	// tableView.getSelectionModel().setSelectionInterval(0, 0);
+	else
+	{
+		JOptionPane.showMessageDialog(null, "status is empty");
+		tableStatus.revalidate();
+	}
+	return true;
+}
+	
+	
 	public boolean useStatusFillTableData() {
 		int nStatusSize = mainStatusTree.size();
 		for (int i = 0; i < nStatusSize; i++) {
@@ -350,8 +392,8 @@ public class mainGUI extends JFrame {
 			} else {
 				for (int i = 0; i < list.size(); i++) {
 					Status statusUser = list.get(i);
-					statusTree myTree = new statusTree(null, statusUser);// root
-																			// status  the  dad  is null
+					statusTree myTree = new statusTree("0", statusUser);// root
+																			// status  the  dad  is zero
 					String strDadId = String.valueOf(statusUser.getId());
 					listTree.add(myTree);
 					while (statusUser.getRetweeted_status() != null) {
