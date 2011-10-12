@@ -1,9 +1,21 @@
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Scanner;
+
+import org.omg.CORBA.portable.InputStream;
+import org.wltea.analyzer.IKSegmentation;
+import org.wltea.analyzer.Lexeme;
+import org.wltea.analyzer.seg.CJKSegmenter;
 
 import weibo4j.Status;
 import weibo4j.User;
@@ -18,6 +30,54 @@ public class mySQLite {
 		DATABASE_CONNECTION = strDBConnection;
 	}
 
+	public boolean insertParseText(String strFileName, String strTableName) {
+		Connection conn = null;
+		try {
+			Class.forName("org.sqlite.JDBC");
+		} catch (ClassNotFoundException e1) {
+			e1.printStackTrace();
+		}
+		try {
+			conn = DriverManager.getConnection(DATABASE_CONNECTION);
+			// 建立事务机制,禁止自动提交，设置回滚点
+			conn.setAutoCommit(false);
+
+			Statement stat = conn.createStatement();
+			Scanner scannerStatus = new Scanner(new File(strFileName));
+			while (scannerStatus.hasNext()) {
+				FileInputStream fileStream = null;
+				fileStream = new FileInputStream(strFileName);
+				Reader reader = new InputStreamReader(fileStream);
+				IKSegmentation mySegment = new IKSegmentation(reader);
+				try {
+					Lexeme nextLexeme = mySegment.next();
+					while (nextLexeme != null) {
+						String strSeg = nextLexeme.getLexemeText();
+						System.out.println(strSeg);
+						ResultSet rs = stat.executeQuery("insert into "
+								+ strTableName + " values ('" + strSeg + "');");
+						conn.commit();
+						nextLexeme = mySegment.next();
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLException e1) {
+			e1.printStackTrace();
+		}finally{
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return false;
+	}
+
 	/**
 	 * 将用户信息插入数据库
 	 * 
@@ -26,7 +86,7 @@ public class mySQLite {
 	 * @return 成功插入，返回真，否则为假
 	 */
 	@SuppressWarnings("finally")
-	private boolean insertUserInfo(String[] strInfo) {
+	public boolean insertUserInfo(String[] strInfo) {
 		Connection conn = null;
 		try {
 			Class.forName("org.sqlite.JDBC");
@@ -95,15 +155,15 @@ public class mySQLite {
 			for (int i = 0; i < listStatus.size(); i++) {
 				String strStatusID = String.valueOf(listStatus.get(i).getId());
 				String strStatusInfo = listStatus.get(0).toString();
-				rs=stat.executeQuery("select * from statusInfo where id = '"
+				rs = stat.executeQuery("select * from statusInfo where id = '"
 						+ strStatusID + "';");
 				String strSQLiteID = rs.getString("id");
 
 				if (strSQLiteID == null)// 如果该id还不存在于数据库中，将其插入
 				{
-//					stat.executeUpdate("insert into userInfo(id) values ('"
-//							+ strStatusID + "');");
-//					conn.commit();
+					// stat.executeUpdate("insert into userInfo(id) values ('"
+					// + strStatusID + "');");
+					// conn.commit();
 				}
 
 				// //以下一共替换了三个字符串，一是日期，一是id，一是false，给这三者都加上了引号，这样，
@@ -142,7 +202,7 @@ public class mySQLite {
 	 * this function create two Table,1.userInfo 2.statusInfo
 	 */
 	private void testSQLite() {
-		Connection conn;
+		Connection conn=null;
 		try {
 			Class.forName("org.sqlite.JDBC");
 
@@ -225,6 +285,12 @@ public class mySQLite {
 		} catch (SQLException e) {
 			System.out.println("create table error");
 			e.printStackTrace();
+		} finally {
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -237,11 +303,11 @@ public class mySQLite {
 	 *            列名称
 	 * @return 数组，包含了该列数据
 	 */
-	public String[] getDataFromDB(String strTable, String strColumn) {
+	public String[] getColumnDataFromDB(String strTable, String strColumn) {
 		String[] strResult = null;
+		Connection conn=null;
 		try {
 			Class.forName("org.sqlite.JDBC");
-			Connection conn;
 			conn = DriverManager.getConnection(DATABASE_CONNECTION);
 			// 建立事务机制,禁止自动提交，设置回滚点
 			conn.setAutoCommit(false);
@@ -263,15 +329,72 @@ public class mySQLite {
 				i++;
 			}
 			stat.close();
-			conn.close();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 		return strResult;
 	}
 
+	/**
+	 * 由数据库的表中取出一row数据
+	 * 
+	 * @param strTable
+	 *            表名称
+	 *  @param strElementName
+	 *            name of Element which you want to compare 
+	 * @param strRowValue
+	 *            Condation ,if ElementName == strRowValue
+	 * @return 数组，包含了该列数据
+	 */
+	public String[] getRowDataFromDB(String strTable,String strElementName,String strRowValue) {
+		Connection conn=null;
+		ResultSet rs2=null;
+		String strResult[]=new String[4];
+		try {
+			Class.forName("org.sqlite.JDBC");
+			conn = DriverManager.getConnection(DATABASE_CONNECTION);
+			// 建立事务机制,禁止自动提交，设置回滚点
+			conn.setAutoCommit(false);
+
+			Statement stat = conn.createStatement();
+			ResultSet rs = stat
+					.executeQuery("SELECT COUNT(*) AS NumberOfUsers FROM "
+							+ strTable + ";");
+			String strNumber = rs.getString("NumberOfUsers").trim();
+			if (strNumber == null || strNumber == "" || strNumber.equals("0"))
+				return null;
+			rs2 = stat.executeQuery("select * from "
+					+ strTable + " where "+strElementName +" = '"+strRowValue+" ';");
+			strResult[0]=rs2.getNString("id");
+			strResult[1]=rs2.getNString("name");
+			strResult[2]=rs2.getNString("access_token");
+			strResult[3]=rs2.getNString("access_secret");
+//					id,name,access_token,"// 访问Token
+//					+ "access_secret)");// 访问密
+			stat.close();
+			
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return strResult;
+	}
+	
 	/**
 	 * get user information
 	 * 
@@ -287,12 +410,10 @@ public class mySQLite {
 		try {
 			user = weiboInfo.showUser(strUserInfo[0]);
 			System.out.println("this user:" + user.toString());
-
 		} catch (WeiboException e) {
 			e.printStackTrace();
 		} finally {
 			return user;
 		}
 	}
-
 }
