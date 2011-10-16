@@ -85,6 +85,8 @@ public class mainGUI extends JFrame {
 	private String[] strSelectName;
 	private Vector vectTableData = new Vector();
 	String[] strTableTitle;
+	private int numberOfPage=1;//当前显示微博的页数
+	private int numbersPerPage=5;//每面显示的数量
 
 	/**
 	 * Launch the application.
@@ -118,9 +120,10 @@ public class mainGUI extends JFrame {
 		dialog.setVisible(true);
 		strToken = new String[3];
 		strToken = dialog.getStrArrToken();
-		if (strToken[0] == null) {
+		if (strToken == null || (strToken[0]==null)) {
 			JOptionPane.showMessageDialog(null, "未获得授权，即将退出");
-			System.exit(ABORT);
+//			return;
+			System.exit(0);
 		}
 		String strUserID = strToken[0];
 
@@ -144,13 +147,15 @@ public class mainGUI extends JFrame {
 		panelName.setLayout(null);
 
 		String[] strArrName = getDataFromDB("userInfo", "screenName");
-		if (strArrName != null) {
+		if (strArrName == null
+				|| (strArrName != null && strArrName.length == 0)) {
+			listUser = new JList();
+		} else {
 			// DefaultListModel
 			listModelUser.addElement(strArrName[0]);
 			listUser = new JList(listModelUser);
-			mainStatusTree = getStatus("姚晨", strToken[1], strToken[2], 1, 20);
-		} else
-			listUser = new JList();
+			mainStatusTree = getStatus("姚晨", strToken[1], strToken[2], numberOfPage, numbersPerPage);
+		}
 		listUser.setBounds(12, 145, 189, 511);
 
 		MouseListener mouseListener = new MouseAdapter() {
@@ -213,9 +218,9 @@ public class mainGUI extends JFrame {
 		btnShowAuthUser.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				mySQLite userSQL = new mySQLite(DB_CONNECTION_TEXT);
-				String[] strUserAuth = userSQL
-						.getColumnDataFromDB("userInfo", "name");
-				if (strUserAuth[0] == null) {
+				String[] strUserAuth = userSQL.getColumnDataFromDB("userInfo",
+						"name");
+				if (strUserAuth == null || (strUserAuth != null && strUserAuth.length == 0)) {
 					JOptionPane.showMessageDialog(null,
 							"There are  no Authority User");
 					return;
@@ -286,7 +291,7 @@ public class mainGUI extends JFrame {
 		panelSearchOption.add(btnBtnsearch);
 
 		JPanel panelContentTool = new JPanel();
-		panelContentTool.setBorder(new TitledBorder("内容工具"));
+		panelContentTool.setBorder(new TitledBorder("工具"));
 		panelContentTool.setBounds(288, 25, 360, 136);
 		panelContent.add(panelContentTool);
 		panelContentTool.setLayout(null);
@@ -298,12 +303,20 @@ public class mainGUI extends JFrame {
 				// pure text file, do this in Funcition getStatus
 				// and then use IKAnalyzer to seperate by Chinese words
 				// finally ,write per word as a record into table in SQLite DB.
-				mySQLite sqlSeg=new mySQLite(DB_CONNECTION_TEXT);
+				mySQLite sqlSeg = new mySQLite(DB_CONNECTION_TEXT);
 				sqlSeg.insertParseText("status", "status_temp");
 			}
 		});
 		btnCalcfrequece.setBounds(12, 25, 97, 28);
 		panelContentTool.add(btnCalcfrequece);
+		
+		JButton btnFansManage = new JButton("粉丝管理");
+		btnFansManage.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+			}
+		});
+		btnFansManage.setBounds(112, 25, 97, 28);
+		panelContentTool.add(btnFansManage);
 
 		JPanel panel = new JPanel();
 		panel.setBounds(10, 616, 661, 39);
@@ -360,7 +373,7 @@ public class mainGUI extends JFrame {
 
 	public boolean getDataByStatus() {
 		int nStatusSize = mainStatusTree.size();
-		PrintWriter writerStater =null;
+		PrintWriter writerStater = null;
 		try {
 			writerStater = new PrintWriter("status");
 			for (int i = 0; i < nStatusSize; i++) {
@@ -370,14 +383,14 @@ public class mainGUI extends JFrame {
 				subVect.add(String.valueOf(currStatus.getId()));
 				subVect.add(mainStatusTree.get(i).getDadID());
 				vectTableData.add(subVect);
-				
+
 				writerStater.write(currStatus.getText());
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-		}finally{
-		writerStater.flush();
-		writerStater.close();
+		} finally {
+			writerStater.flush();
+			writerStater.close();
 		}
 		return true;
 	}

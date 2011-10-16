@@ -356,7 +356,6 @@ public class mySQLite {
 	 */
 	public String[] getRowDataFromDB(String strTable,String strElementName,String strRowValue) {
 		Connection conn=null;
-		ResultSet rs2=null;
 		String strResult[]=new String[4];
 		try {
 			Class.forName("org.sqlite.JDBC");
@@ -365,22 +364,22 @@ public class mySQLite {
 			conn.setAutoCommit(false);
 
 			Statement stat = conn.createStatement();
-			ResultSet rs = stat
-					.executeQuery("SELECT COUNT(*) AS NumberOfUsers FROM "
-							+ strTable + ";");
-			String strNumber = rs.getString("NumberOfUsers").trim();
-			if (strNumber == null || strNumber == "" || strNumber.equals("0"))
-				return null;
-			rs2 = stat.executeQuery("select * from "
-					+ strTable + " where "+strElementName +" = '"+strRowValue+" ';");
-			strResult[0]=rs2.getNString("id");
-			strResult[1]=rs2.getNString("name");
-			strResult[2]=rs2.getNString("access_token");
-			strResult[3]=rs2.getNString("access_secret");
-//					id,name,access_token,"// 访问Token
-//					+ "access_secret)");// 访问密
+//			ResultSet rs = stat
+//					.executeQuery("SELECT COUNT(*) AS NumberOfUsers FROM "
+//							+ strTable + ";");
+//			String strNumber = rs.getString("NumberOfUsers").trim();
+//			if (strNumber == null || strNumber == "" || strNumber.equals("0"))
+//				return null;
+			String strQuery="select * from "
+					+ strTable + " where "+strElementName +" = '"+strRowValue.trim()+" ';";
+			ResultSet rs = stat.executeQuery(strQuery);
+			if(rs.getString("id")!=null){
+			strResult[0]=rs.getString("id");
+			strResult[1]=rs.getString("name");
+			strResult[2]=rs.getString("access_token");
+			strResult[3]=rs.getString("access_secret");
+			}
 			stat.close();
-			
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
