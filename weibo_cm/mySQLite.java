@@ -352,7 +352,7 @@ public class mySQLite {
 	 *            name of Element which you want to compare 
 	 * @param strRowValue
 	 *            Condation ,if ElementName == strRowValue
-	 * @return 数组，包含了该列数据
+	 * @return 数组，包含了该row数据,0:id,1:name,2:token,3:secret
 	 */
 	public String[] getRowDataFromDB(String strTable,String strElementName,String strRowValue) {
 		Connection conn=null;

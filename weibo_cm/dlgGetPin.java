@@ -94,8 +94,8 @@ public class dlgGetPin extends JDialog {
 			JLabel label = new JLabel("已授权帐号：");
 			panel.add(label);
 
-			
-			String[] strListName = getDataFromDB("userInfo", "screenName");
+			mySQLite thisSQL=new mySQLite(DATABASE_CONNECTION);
+			String[] strListName = thisSQL.getColumnDataFromDB("userInfo", "screenName");
 			if (strListName!= null) {
 				comboBox = new JComboBox(strListName);
 			} else
@@ -256,73 +256,4 @@ public class dlgGetPin extends JDialog {
 		return accessToken;
 	}
 
-	@SuppressWarnings("finally")
-	private User getUserInfo(String strUserID) {
-		Weibo weiboInfo = new Weibo();
-		weiboInfo.setToken(strToken[1], strToken[2]);
-		User user = null;
-		try {
-			user = weiboInfo.showUser(strUserID);
-			System.out.println("this user:" + user.toString());
-
-		} catch (WeiboException e) {
-			e.printStackTrace();
-		} finally {
-			return user;
-		}
-	}
-
-
-
-	
-
-	/**
-	 * 由数据库的表中取出一列数据
-	 * 
-	 * @param strTable
-	 *            表名称
-	 * @param strColumn
-	 *            列名称
-	 * @return 数组，包含了该列数据
-	 */
-	private String[] getDataFromDB(String strTable, String strColumn) {
-		Connection conn=null;
-		String[] strResult = null;
-		try {
-			Class.forName("org.sqlite.JDBC");
-			conn = DriverManager.getConnection(DATABASE_CONNECTION);
-			// 建立事务机制,禁止自动提交，设置回滚点
-			conn.setAutoCommit(false);
-
-			Statement stat = conn.createStatement();
-			// stat.executeUpdate(
-			ResultSet rs = stat
-					.executeQuery("SELECT COUNT(*) AS NumberOfUsers FROM "
-							+ strTable + ";");
-			String strNumber = rs.getString("NumberOfUsers").trim();
-			if (strNumber == null || strNumber == "" || strNumber.equals("0"))
-				return null;
-			int nUser = Integer.parseInt(rs.getString("NumberOfUsers"));
-			strResult = new String[nUser];
-			ResultSet rs2 = stat.executeQuery("select " + strColumn + " from "
-					+ strTable + ";");
-			int i = 0;
-			while (rs2.next()) {
-				strResult[i] = rs2.getString(strColumn);
-				i++;
-			}
-			stat.close();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}finally{
-			try{
-				conn.close();
-			}catch (SQLException e) {
-				e.printStackTrace();
-			}
-		}
-		return strResult;
-	}
 }

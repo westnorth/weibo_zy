@@ -146,7 +146,8 @@ public class mainGUI extends JFrame {
 		getContentPane().add(panelName);
 		panelName.setLayout(null);
 
-		String[] strArrName = getDataFromDB("userInfo", "screenName");
+		mySQLite thisSQL=new mySQLite(DB_CONNECTION_TEXT);
+		String[] strArrName = thisSQL.getColumnDataFromDB("userInfo", "screenName");
 		if (strArrName == null
 				|| (strArrName != null && strArrName.length == 0)) {
 			listUser = new JList();
@@ -154,7 +155,8 @@ public class mainGUI extends JFrame {
 			// DefaultListModel
 			listModelUser.addElement(strArrName[0]);
 			listUser = new JList(listModelUser);
-			mainStatusTree = getStatus("姚晨", strToken[1], strToken[2], numberOfPage, numbersPerPage);
+			myWeibo currWeibo=new myWeibo(CONSUMKEY,CONSUMSECRET);
+			mainStatusTree = currWeibo.getStatus("姚晨", strToken[1], strToken[2], numberOfPage, numbersPerPage);
 		}
 		listUser.setBounds(12, 145, 189, 511);
 
@@ -165,8 +167,9 @@ public class mainGUI extends JFrame {
 					int index = theList.locationToIndex(mouseEvent.getPoint());
 					if (index >= 0) {
 						Object o = theList.getModel().getElementAt(index);
-						mainStatusTree = getStatus(o.toString(), strToken[1],
-								strToken[2], 1, 100);
+						myWeibo currWeibo=new myWeibo(CONSUMKEY,CONSUMSECRET);
+						mainStatusTree =  currWeibo.getStatus(o.toString(), strToken[1],
+								strToken[2], numberOfPage, numbersPerPage);
 						useDataFillTable();
 						System.out
 								.println("Double-clicked on: " + o.toString());
@@ -201,8 +204,9 @@ public class mainGUI extends JFrame {
 		JButton btnShowStatus = new JButton("Show status");
 		btnShowStatus.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				mainStatusTree = getStatus(txtUsersearch.getText(),
-						strToken[1], strToken[2], 1, 100);
+				myWeibo currWeibo=new myWeibo(CONSUMKEY,CONSUMSECRET);
+				mainStatusTree =  currWeibo.getStatus(txtUsersearch.getText(),
+						strToken[1], strToken[2], numberOfPage, numbersPerPage);
 				useDataFillTable();
 				listModelUser.addElement(txtUsersearch.getText());
 				// final DefaultListModel listModel = new DefaultListModel();//
@@ -395,108 +399,6 @@ public class mainGUI extends JFrame {
 		return true;
 	}
 
-	/**
-	 * 由数据库的表中取出一列数据
-	 * 
-	 * @param strTable
-	 *            表名称
-	 * @param strColumn
-	 *            列名称
-	 * @return 数组，包含了该列数据
-	 */
-	private String[] getDataFromDB(String strTable, String strColumn) {
-		String[] strResult = null;
-		try {
-			Class.forName("org.sqlite.JDBC");
-			Connection conn;
-			conn = DriverManager.getConnection(DB_CONNECTION_TEXT);
-			// 建立事务机制,禁止自动提交，设置回滚点
-			conn.setAutoCommit(false);
-
-			Statement stat = conn.createStatement();
-			// stat.executeUpdate(
-			ResultSet rs = stat
-					.executeQuery("SELECT COUNT(*) AS NumberOfUsers FROM "
-							+ strTable + ";");
-			String strNumber = rs.getString("NumberOfUsers").trim();
-			if (strNumber == null || strNumber == "" || strNumber.equals("0"))
-				return null;
-			int nUser = Integer.parseInt(rs.getString("NumberOfUsers"));
-			strResult = new String[nUser];
-			ResultSet rs2 = stat.executeQuery("select " + strColumn + " from "
-					+ strTable + ";");
-			int i = 0;
-			while (rs2.next()) {
-				strResult[i] = rs2.getString(strColumn);
-				i++;
-			}
-			stat.close();
-			conn.close();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return strResult;
-	}
-
-	/**
-	 * 获得微博内容,要注意的是如果是Retweet的消息，则需要取得retweeted_status中的内容
-	 * 
-	 * @param strName
-	 *            欲获得内容微博主人的名字或id
-	 * @param strTokenKey
-	 *            访问令牌
-	 * @param strTokenSecret
-	 *            访问密钥
-	 * @param nPage
-	 *            要获得内容的页码编号
-	 * @param nNumberOfStatus
-	 *            每页要获得的Status的数量
-	 * @return 获得内容列表
-	 */
-	private ArrayList<statusTree> getStatus(String strName, String strTokenKey,
-			String strTokenSecret, int nPage, int nNumberOfStatus) {
-		System.setProperty("weibo4j.oauth.consumerKey", CONSUMKEY);
-		System.setProperty("weibo4j.oauth.consumerSecret", CONSUMSECRET);
-		ArrayList<statusTree> listTree = new ArrayList<statusTree>();
-		try {
-			Weibo weibo = new Weibo();
-			weibo.setToken(strTokenKey, strTokenSecret);
-			List<Status> list = weibo.getUserTimeline(strName,
-					new Paging(nPage).count(nNumberOfStatus));
-			if (list.size() == 0) {
-				System.out.println("there is no status");
-			} else {
-				for (int i = 0; i < list.size(); i++) {
-					Status statusUser = list.get(i);
-					statusTree myTree = new statusTree("0", statusUser);// root
-																		// status
-																		// the
-																		// dad
-																		// is
-																		// zero
-					String strDadId = String.valueOf(statusUser.getId());
-					listTree.add(myTree);
-					while (statusUser.getRetweeted_status() != null) {
-						Status subStatus = statusUser.getRetweeted_status();
-						statusTree subTree = new statusTree(strDadId, subStatus);
-						listTree.add(subTree);
-						statusUser = subStatus;
-						strDadId = String.valueOf(statusUser.getId());
-					}
-					mySQLite myDB = new mySQLite(DB_CONNECTION_TEXT);
-					myDB.insertStatus(list);
-					String Text = statusUser.getText();
-					System.out.println(Text);
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-		return listTree;
-	}
 
 	/**
 	 * Initialize the contents of the frame.
