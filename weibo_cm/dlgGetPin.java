@@ -7,8 +7,10 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
-import weibo4j.User;
+//import weibo4j.User;
 import weibo4j.Weibo;
 import weibo4j.WeiboException;
 import weibo4j.http.AccessToken;
@@ -17,19 +19,17 @@ import weibo4j.util.BareBonesBrowserLaunch;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+//import java.sql.Connection;
+//import java.sql.DriverManager;
+//import java.sql.ResultSet;
+//import java.sql.SQLException;
+//import java.sql.Statement;
 
 import javax.swing.JComboBox;
 
-public class dlgGetPin extends JDialog {
+import org.jvnet.substance.skin.SubstanceOfficeSilver2007LookAndFeel;
 
-	/**
-	 * 
-	 */
+public class dlgGetPin extends JDialog {
 	private static final long serialVersionUID = 1L;
 	private static String DATABASE_CONNECTION = "jdbc:sqlite:weibo.db";
 	public String strPin = "";
@@ -51,6 +51,12 @@ public class dlgGetPin extends JDialog {
 	 */
 	public dlgGetPin(JFrame owner) {
 		super(owner, "get Pin", true);
+		  try {
+				UIManager.setLookAndFeel(new SubstanceOfficeSilver2007LookAndFeel());
+			} catch (UnsupportedLookAndFeelException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}  
 		setBounds(100, 100, 769, 300);
 		System.setProperty("weibo4j.oauth.consumerKey", CONSUMKEY);
 		System.setProperty("weibo4j.oauth.consumerSecret", CONSUMSECRET);
@@ -143,12 +149,15 @@ public class dlgGetPin extends JDialog {
 			JButton button = new JButton("使用");
 			button.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
-					strToken[0] = "2438418282";
-					strToken[1] = "7ec54f90c153baf78238f114d8d08508";
-					strToken[2] = "066d1018fde349269c77622db21bd4ce";
+//					strToken[0] = "2438418282";
+//					strToken[1] = "7ec54f90c153baf78238f114d8d08508";
+//					strToken[2] = "066d1018fde349269c77622db21bd4ce";
 					mySQLite mySQL=new mySQLite(DATABASE_CONNECTION);
 					strCurrentUserInfo=mySQL.getRowDataFromDB("userInfo",
 							"screenName",comboBox.getSelectedItem().toString());
+					strToken[0]=strCurrentUserInfo[0];
+					strToken[1]=strCurrentUserInfo[2];
+					strToken[2]=strCurrentUserInfo[3];
 					closeDlg();
 				}
 			});
@@ -222,10 +231,20 @@ public class dlgGetPin extends JDialog {
 		this.dispose();
 	}
 
+	/**
+	 * get the strToken,is a  3 dim array,and 1,id 2.token 3.token secret
+	 * @return strToken
+	 */
 	public String[] getStrArrToken() {
 		return strToken;
 	}
 
+	/**
+	 * get AccessToken,and store them in strToken
+	 * @param requestToken
+	 * @param strPin
+	 * @return
+	 */
 	public AccessToken getAccessToken(RequestToken requestToken, String strPin) {
 		while (null == accessToken) {
 			try {

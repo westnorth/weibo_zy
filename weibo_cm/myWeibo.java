@@ -8,7 +8,7 @@ import weibo4j.Weibo;
 import weibo4j.WeiboException;
 
 public class myWeibo {
-	private static String DATABASE_CONNECTION = "jdbc:sqlite:";// 后面添加一个数据库名就是一个完整的连接字符串
+	private static String DATABASE_CONNECTION = "jdbc:sqlite:weibo.db";// 后面添加一个数据库名就是一个完整的连接字符串
 	private Weibo weibo = new Weibo();
 
 	public myWeibo(String consumKey, String consumSecret) {
@@ -91,4 +91,75 @@ public class myWeibo {
 		return listTree;
 	}
 
+	/**
+	 * 获得粉丝列表
+	 * @param strToken 1.id，2.Token,3.token secret
+	 * @param nPage 页码
+	 * @return粉丝列表的id数组，如果为空，返回null
+	 */
+	public long[] getFollowersIDs(String[] strToken,int nPage){
+		long[] ids=null;
+		try {
+			Weibo weibo = new Weibo();
+			weibo.setToken(strToken[1],strToken[2]);
+			//cursor处理翻页
+			int cursor=nPage;
+			//args[2]:关注用户的id
+			ids = weibo.getFollowersIDSByUserId(strToken[0], cursor).getIDs();
+
+		} catch (WeiboException e) {
+			e.printStackTrace();
+		}
+		return ids;
+	}
+	
+	/**
+	 * 关注某用户
+	 * @param strToken 1.要关注用户的id，2.自己的Token，3.自己的Secret
+	 * @return User类型的用户信息，失败，返回null
+	 */
+	public User followerSomeGuy(String[] strToken)
+	{
+		User returnUser=null;
+		Weibo weibo=new Weibo();
+		weibo.setToken(strToken[1],strToken[2]);
+		try {
+			returnUser=weibo.createFriendship(strToken[0]);
+		} catch (WeiboException e) {
+			e.printStackTrace();
+		}
+		return returnUser;
+	}
+	
+	/**
+	 * 取消关注某用户
+	 * @param strToken 1.要取消关注用户的id，2.自己欢迎各界人士联系合作的Token，3.自己的Secret
+	 * @return User类型的用户信息，失败，返回null
+	 */
+	public User DestroyGuy(String[] strToken)
+	{
+		User returnUser=null;
+		Weibo weibo=new Weibo();
+		weibo.setToken(strToken[1],strToken[2]);
+		try {
+			returnUser=weibo.destroyFriendship(strToken[0]);
+		} catch (WeiboException e) {
+			e.printStackTrace();
+		}
+		return returnUser;
+	}
+	
+	
+	public User blockGuy(String[] strToken)
+	{
+		User returnUser=null;
+		Weibo weibo=new Weibo();
+		weibo.setToken(strToken[1],strToken[2]);
+		try {
+			returnUser=weibo.block(strToken[0]);
+		} catch (WeiboException e) {
+			e.printStackTrace();
+		}
+		return returnUser;
+	}
 }

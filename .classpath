@@ -7,12 +7,9 @@
 	<classpathentry kind="lib" path="lib/commons-httpclient-3.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/store/develop/source/java/mail.jar"/>
-	<classpathentry kind="lib" path="/store/develop/source/java/activation.jar"/>
-	<classpathentry kind="lib" path="/store/develop/source/java/lucene-3.4.0/lucene-core-3.4.0.jar"/>
-	<classpathentry kind="lib" path="/store/develop/source/java/IKAnalyzer3.2.8 bin/IKAnalyzer3.2.8.jar"/>
-	<classpathentry kind="lib" path="/store/develop/source/java/sqlitejdbc-v033-nested.jar"/>
-	<classpathentry kind="lib" path="/home/westcn/store/develop/source/java/Quaqua/dist"/>
-	<classpathentry kind="lib" path="/home/westcn/store/develop/source/java/Quaqua/dist/quaqua.jar"/>
+	<classpathentry kind="lib" path="/home/westnorth/develop/source/jar/sqlitejdbc-v056.jar"/>
+	<classpathentry kind="lib" path="/home/westnorth/develop/source/jar/javamail-1.4.4/mail.jar"/>
+	<classpathentry kind="lib" path="/home/westnorth/develop/source/jar/substance.jar"/>
+	<classpathentry kind="lib" path="/home/westnorth/develop/source/jar/IKAnalyzer3.2.8 bin/IKAnalyzer3.2.8.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

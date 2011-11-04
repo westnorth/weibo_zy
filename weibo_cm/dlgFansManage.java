@@ -13,15 +13,24 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.table.TableRowSorter;
+
+import org.jvnet.substance.skin.SubstanceOfficeSilver2007LookAndFeel;
+
+import weibo4j.User;
 
 public class dlgFansManage extends JDialog {
 	private static final long serialVersionUID = 1L;
 	private static String DB_CONNECTION_TEXT = "jdbc:sqlite:weibo.db";
 	private JTable table;
 
-	private String[] strTableTitle={"选择","名称","最后一条微博","关注时间","粉丝数","关注数","是否认证","用户id"};//表标题
+	private String[] strTableTitle={"名称","最后一条微博","粉丝数","关注数","用户id"};//表标题
 	private Vector vectTableData=new Vector();//表数据
+	
+	
+	String[] strToken=new String[3];
 	
 	private JScrollPane scrollPaneContent;
 	private Table_Model TableDataModel;
@@ -30,6 +39,9 @@ public class dlgFansManage extends JDialog {
 	final int INITIAL_ROWHEIGHT = 33;
 	
 	private String[] strSelectName;
+	
+	private static String CONSUMKEY = "416693359";
+	private static String CONSUMSECRET = "f3aedd1273689a65b2f6a82f7d77dd25";
 	/**
 	 * Launch the application.
 	 */
@@ -47,6 +59,12 @@ public class dlgFansManage extends JDialog {
 	 * Create the dialog.
 	 */
 	public dlgFansManage(String strName) {
+        try {
+			UIManager.setLookAndFeel(new SubstanceOfficeSilver2007LookAndFeel());
+		} catch (UnsupportedLookAndFeelException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}  
 		setBounds(100, 100, 607, 393);
 		getContentPane().setLayout(null);
 
@@ -58,7 +76,7 @@ public class dlgFansManage extends JDialog {
 		tableFans.setBounds(12, 12, 389, 283);
 		
 		// 将表放入滚动面板中，这种使滚动条和控件分离的做法实在有点不优雅。
-		createTable("李四");
+		scrollPaneContent=createTable("李四");
 		scrollPaneContent.getViewport().setView(tableFans);
 		panelFansTable.add(scrollPaneContent);
 
@@ -112,7 +130,7 @@ public class dlgFansManage extends JDialog {
 	
 	public JScrollPane createTable(String strName) {
 
-		getDataByName(strName);
+		getFolloersByName(strName);
 		// Create a model of the vectTableData.
 		TableDataModel = new Table_Model(vectTableData, strTableTitle);
 		// Create the table
@@ -133,6 +151,9 @@ public class dlgFansManage extends JDialog {
 						.replace(']', ' ').split(",");// 转换为String后，字符会用一对方括号括起来，这个先用硬编码取掉。
 				if (me.getButton() == MouseEvent.BUTTON1) {// 单击鼠标左键
 					if (me.getClickCount() == 2) {// 如果是双击
+						strToken[0]=strSelectName[0];
+						UserDetail dlgDetail=new UserDetail(strToken);
+						dlgDetail.show();
 					}
 				}
 
@@ -152,17 +173,31 @@ public class dlgFansManage extends JDialog {
 	 * @param strName 用户名
 	 * @return 如果已经将粉丝信息保存在vectTableData，返回真，否则返回假
 	 */
-	private boolean getDataByName(String strName){
+	private boolean getFolloersByName(String strName){
 //		strTableTitle={"选择","名称","最后一条微博","关注时间","粉丝数","关注数","是否认证","用户id"};
 		mySQLite mysql=new mySQLite(DB_CONNECTION_TEXT);
-		String[] strUserInfo=mysql.getRowDataFromDB("userInfo", "screenName", "凛冬降临");
-		String[] strToken=new String[3];
+		String[] strUserInfo=mysql.getRowDataFromDB("userInfo", "screenName", "心情慵懒");
+
 		strToken[0]=strUserInfo[0];//user id
 		strToken[1]=strUserInfo[2];//token 
 		strToken[2]=strUserInfo[3];//token secret
-		Vector subVect=new Vector();
-		subVect.add("张三");
-		vectTableData.add(subVect);
+		myWeibo thisWeibo=new myWeibo(CONSUMKEY,CONSUMSECRET);
+		long[] ids=thisWeibo.getFollowersIDs(strToken, 0);
+		for(long id:ids)
+		{
+			Vector subVect=new Vector();
+			strToken[0]=String.valueOf(id);
+			User curUser=thisWeibo.getUserInfo(strToken);
+			if(curUser==null)
+				continue;
+			subVect.add(curUser.getName());
+			subVect.add(curUser.getStatus().getText());
+			subVect.add(curUser.getFollowersCount());
+			subVect.add(curUser.getFriendsCount());
+			subVect.add(curUser.getId());
+			vectTableData.add(subVect);
+		}
+		
 		return false;
 	}
 	
@@ -237,7 +272,6 @@ public class dlgFansManage extends JDialog {
 				// TODO export item
 			}
 		});
-
 		popupMenu.show(evt.getComponent(), evt.getX(), evt.getY());
 	}
 

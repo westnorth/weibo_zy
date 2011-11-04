@@ -60,17 +60,20 @@ public class mySQLite {
 						nextLexeme = mySegment.next();
 					}
 				} catch (IOException e) {
+
 					e.printStackTrace();
 				}
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e1) {
+			System.out.println("i'm in mySQLite and insertParseText");
 			e1.printStackTrace();
 		}finally{
 			try {
 				conn.close();
 			} catch (SQLException e) {
+				System.out.println("i'm in mySQLite and insertParseText");
 				e.printStackTrace();
 			}
 		}
@@ -128,9 +131,11 @@ public class mySQLite {
 					+ " where id = '" + strInfo[0] + "';";
 			stat.executeUpdate(strExecute);
 			conn.commit();
+			rs.close();
 			stat.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
+			System.out.println("i'm in mySQLite and inseruserinfo");
 			return false;
 		} finally {
 			try {
@@ -151,19 +156,18 @@ public class mySQLite {
 			conn.setAutoCommit(false);
 
 			Statement stat = conn.createStatement();
-			ResultSet rs = null;
 			for (int i = 0; i < listStatus.size(); i++) {
 				String strStatusID = String.valueOf(listStatus.get(i).getId());
 				String strStatusInfo = listStatus.get(0).toString();
-				rs = stat.executeQuery("select * from statusInfo where id = '"
+				ResultSet rs3 = stat.executeQuery("select * from statusInfo where id = '"
 						+ strStatusID + "';");
-				String strSQLiteID = rs.getString("id");
+				String strSQLiteID = rs3.getString("id");
 
 				if (strSQLiteID == null)// 如果该id还不存在于数据库中，将其插入
 				{
-					// stat.executeUpdate("insert into userInfo(id) values ('"
-					// + strStatusID + "');");
-					// conn.commit();
+					 stat.executeUpdate("insert into userInfo(id) values ('"
+					 + strStatusID + "');");
+					 conn.commit();
 				}
 
 				// //以下一共替换了三个字符串，一是日期，一是id，一是false，给这三者都加上了引号，这样，
@@ -180,11 +184,13 @@ public class mySQLite {
 				String strExecute = "update userInfo set " + strUserInfo
 						+ " where id = '" + strStatusID + "';";
 				// stat.executeUpdate(strExecute);
+				rs3.close();
 				conn.commit();
 			}
 			stat.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
+			System.out.println("i'm in mySQLite and insertstatus");
 			return false;
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
@@ -328,11 +334,14 @@ public class mySQLite {
 				strResult[i] = rs2.getString(strColumn);
 				i++;
 			}
+			rs.close();
+			rs2.close();
 			stat.close();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
+			System.out.println("i'm in mySQLite and getColumnData");
 		} finally {
 			try {
 				conn.close();
@@ -371,9 +380,9 @@ public class mySQLite {
 //			if (strNumber == null || strNumber == "" || strNumber.equals("0"))
 //				return null;
 			String strQuery="select * from "
-					+ strTable + " where "+strElementName +" = '"+strRowValue.trim()+" ';";
+					+ strTable + " where "+strElementName +"='"+strRowValue.trim()+"';";
 			ResultSet rs = stat.executeQuery(strQuery);
-			if(rs.getString("id")!=null){
+			if(rs.next()){
 			strResult[0]=rs.getString("id");
 			strResult[1]=rs.getString("name");
 			strResult[2]=rs.getString("access_token");
@@ -384,6 +393,7 @@ public class mySQLite {
 			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
+			System.out.println("i'm in mySQLite and getRowData");
 		} finally {
 			try {
 				conn.close();

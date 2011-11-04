@@ -4,18 +4,18 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.File;
+//import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+//import java.sql.Connection;
+//import java.sql.DriverManager;
+//import java.sql.ResultSet;
+//import java.sql.SQLException;
+//import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+//import java.util.List;
+//import java.util.Scanner;
 import java.util.Vector;
 
 import javax.swing.ButtonGroup;
@@ -36,12 +36,15 @@ import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.TableRowSorter;
 
-import weibo4j.Paging;
+//import weibo4j.Paging;
 import weibo4j.Status;
 import weibo4j.User;
 import weibo4j.Weibo;
 import weibo4j.WeiboException;
 import javax.swing.JCheckBox;
+
+import org.jvnet.substance.skin.*;
+//import org.jvnet.substance.skin.SubstanceBusinessBlueSteelLookAndFeel;  
 
 //import ch.randelshofer.quaqua.*;
 class statusTree {
@@ -95,19 +98,20 @@ public class mainGUI extends JFrame {
 
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
-				System.setProperty("Quaqua.tabLayoutPolicy", "wrap");
-				try {
-					UIManager
-							.setLookAndFeel("ch.randelshofer.quaqua.QuaquaLookAndFeel");
-					mainGUI window = new mainGUI();
+				
+				JFrame.setDefaultLookAndFeelDecorated(true);  
+		        try {  
+		            UIManager.setLookAndFeel(new SubstanceOfficeSilver2007LookAndFeel());  
+		            mainGUI window = new mainGUI();
 					window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 					window.setVisible(true);
 					window.setResizable(false);
 					window.getContentPane().setLayout(null);
 					window.setLocationRelativeTo(null);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+		        } catch (Exception e) {  
+		            System.out.println("Substance Raven Graphite failed to initialize");  
+		        }  
+						
 			}
 		});
 	}
@@ -129,7 +133,7 @@ public class mainGUI extends JFrame {
 
 		Weibo weiboInfo = new Weibo();
 		weiboInfo.setToken(strToken[1], strToken[2]);
-		User user;
+		User user=null;
 		try {
 			user = weiboInfo.showUser(strUserID);
 			System.out.println("this user:" + user.toString());
@@ -156,7 +160,7 @@ public class mainGUI extends JFrame {
 			listModelUser.addElement(strArrName[0]);
 			listUser = new JList(listModelUser);
 			myWeibo currWeibo=new myWeibo(CONSUMKEY,CONSUMSECRET);
-			mainStatusTree = currWeibo.getStatus("姚晨", strToken[1], strToken[2], numberOfPage, numbersPerPage);
+			mainStatusTree = currWeibo.getStatus(strUserID, strToken[1], strToken[2], numberOfPage, numbersPerPage);
 		}
 		listUser.setBounds(12, 145, 189, 511);
 

@@ -2239,10 +2239,6 @@ public class Weibo extends WeiboSupport implements java.io.Serializable {
 	}
 
 
-
-
-
-
 	/**
 	 * Return your relationship with the details of a user
 	 * @param target_id id of the befriended user
